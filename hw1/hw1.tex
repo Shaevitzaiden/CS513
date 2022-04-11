@@ -1,0 +1,455 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1.2cm,tmargin=1.2cm]{geometry}
+\usepackage{xspace}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{ulem}
+\usepackage{upquote}
+\usepackage{paralist}
+\usepackage{enumerate}
+%\usepackage{layout}
+
+%\addtolength{\topmargin}{-
+
+\newcommand{\longspace}{\underline{\hspace{4.5cxm}}}
+\newcommand{\shortspace}{\underline{\hspace{2.5cm}}}
+\newcommand{\vecx}{\ensuremath{\mathbf{x}}\xspace}
+\newcommand{\matA}{\ensuremath{\mathbf{A}}\xspace}
+
+\newcommand{\update}[1]{{\bf\color{black} #1}}
+
+\title{\vspace{-1cm}Applied Machine Learning HW1: Feature Map and $k$-NN (20\%)}
+\author{Due {Monday April 18} @ 11:59pm on Canvas\\[0.1cm]
+{\bf \color{black}(you should finish part 1 by the end of week 1, and part 2 by the end of week 2!)}}
+%\author{\small Last: \longspace \; First: \longspace \; ONID: \shortspace {\tt @oregonstate.edu} }
+\date{}
+
+\begin{document}
+
+
+\maketitle
+%\thispagestyle{empty}
+
+\setdefaultleftmargin{15pt}{}{}{}{}{}
+
+\vspace{-.5cm}
+\noindent Instructions:
+\begin{enumerate}
+%\item Singleton groups are \underline{not} allowed. Please reply to the Canvas discussion thread to find teammates.
+%\item Before you submit, please join your group on Canvas under {\tt People / HW1 Groups}.
+      %Each group just needs to submit one copy.
+%      If any group member submits, it's automatically considered submission for his/her group.
+\item This HW, like all other programming HWs, should be done in Python 3 and numpy only.
+See the course homepage for a numpy tutorial.
+If you don't have a Python+numpy installation yourself, you can use the  College of Engineering servers by
+
+\verb|ssh username@access.engr.oregonstate.edu|
+
+replacing \verb|username| with your ENGR user name (should be identical to your ONID login). See the following for instructions on using SSH from Windows:
+
+\verb|https://it.engineering.oregonstate.edu/accessing-unix-server-using-putty-ssh|
+
+ If you don't have an ENGR account,
+see {\tt https://it.engineering.oregonstate.edu/get-engr-account}.
+
+\smallskip
+
+You're {\bf highly recommended} to set up SSH keys to bypass Duo authentication and password:
+
+{\tt https://it.engineering.oregonstate.edu/ssh-keygen}
+
+The default {\tt python3} on ENGR servers have {\tt numpy}, {\tt matplotlib}, and {\tt pandas} installed. 
+
+\item Besides machine learning, this HW also teaches you data (pre-)processing skills and Unix (Linux or Mac OS X) command lines tools. These skills are even more important than machine learning itself for a software engineer or data scientist. As stated in the syllabus, Windows is {\bf not} recommended (no data scientist uses Windows). The instructor and the TAs, like other computer scientists, have very limited Windows expertise, and will not be able to provide much technical assistance for Windows. Use \update{cmder, cygwin}, or ssh (see above) if you don't have Linux or Mac OS X on your own computer.
+
+If you prefer to use Jupyter notebook but have difficulty setting it up on your own computer, 
+the TAs have written a tutorial on running jupyter notebook remotely on the server:
+
+\verb|https://classes.engr.oregonstate.edu/eecs/spring2022/cs513-400/extra/TAs_jupyter_tutorial.pdf|
+
+\item Ask questions on \update{Slack}. You're encouraged to answer other students' questions as well.
+
+\item Do \underline{not} use machine learning packages such as {\tt sklearn}, though you can use them to verify your results.
+\item Do \underline{not} use data analysis packages such as {\tt pandas} or {\tt seaborn}.
+Your code should only depend on standard built-in packages plus {\tt numpy}.
+
+\item Download  HW1 data from the course homepage. Unzip it by running \verb|tar -xzvf hw1-data.tgz| (here \verb|-x| means ``extract'' and \verb|z| means ``unzip''; you might also be able to open it using WinZip or 7-zip on Windows).
+It contains:
+
+\begin{tabular}{ll}
+\verb|income.train.txt.5k| & training data (5,000 examples, with labels)\\
+\verb|income.dev.txt| & dev set (1,000 examples, with labels)\\
+\verb|income.test.blind| & test set (1,000 examples, without labels)\\
+\verb|toy.txt| \& \verb|binarize_example.py| & toy data and binarization code example\\
+\verb|validate.py| \& \verb|random_output.py| & tools to validate your test result
+\end{tabular}
+
+The \underline{semi-blind} test set does not contain the target labels (\verb|>50K| or \verb|<=50K|), which you will need to predict using your best model.
+Part of your grade is based on your prediction accuracy on test.
+Please make heavy use of the three python programs supplied, so that you don't need to start from scratch. For example, you should base your Part 1 on \verb|binarize_example.py| and use \verb|validate.py| to verify your test result in Part 4.
+
+If you'd like to download the zip file to your remote ENGR server, use this command on the server:
+
+\verb|wget https://classes.engr.oregonstate.edu/eecs/spring2022/cs513-400/hw1/hw1-data.tgz|
+
+
+\item You should submit a single {\tt .zip} file containing {\tt hw1-report.pdf}, {\tt income.test.predicted}, and all your code.
+  \LaTeX'ing is recommended but not required.
+  {\bf Do not forget the debrief section (in each HW).}
+\end{enumerate}
+
+\section{Data (Pre-)Processing (Feature Map)}
+
+{\it This is the most coding-heavy part in HW1, but you don't need to start from scratch. See} \verb|binarize_example.py|.
+
+\begin{enumerate}
+
+\item Take a look at the data. A training example looks like this:
+
+\verb|37, Private, Bachelors, Separated, Other-service, White, Male, 70, England, <=50K|
+
+which includes the following 9 input fields plus one output field ($y$):
+
+{\it age, sector, education, marital-status, occupation, race, gender,  hours-per-week, country-of-origin, target}
+
+Q: What are the positive \% of training data? What about the dev set? Does it make sense given your knowledge of the average per capita income in the US?
+
+\item 
+Q: What are the youngest and oldest ages in the training set?
+What are the least and most amounts of hours per week do people in this set work?
+Hint: 
+
+{\tt \$ cat income.train.txt.5k | sort -nk1 | head -1}
+
+Note the {\tt \$} is the prompt, not part of the command. {\tt cat} lists all contents of a file (like Windows {\tt type}), {\tt sort -nk1} means sort by the first column numerically, and {\tt head -1} lists the first line. Here {\tt |} means ``pipe'', i.e., feeding the output of the previous command as input to the next command.
+%{\tt cat income.train.txt.5k | sort -nk8 | head -1}
+
+
+\item
+There are two types of fields, {\it numerical}  ({\it age} and {\it hours-per-week}), and {\it categorical} (everything else).\footnote{
+  In principle, we could also convert {\it education} to a numerical feature,
+  but we choose {\bf not} to do it to keep it simple.}
+The default preprocessing method is to {\it binarize} all categorical fields,
+e.g., %{\it age} becomes many {\it binary} features such as
+%\verb|age=1|, \verb|age=2|, etc.,
+%and
+{\it race} becomes  many {\it binary} features such as
+\verb|race=White|, \verb|race=Asian-Pac-Islander|, etc.
+These resulting features are all {\em binary}, meaning 
+their values can only be 0 or 1, and for each example,
+in each field, there is one and only one positive feature
+(this is the so-called ``one-hot'' representation,
+widely used in ML and NLP).
+
+Q: Why do we need to  binarize all categorical fields?
+
+\item
+Q: If we do not count {\it age} and {\it hours},
+what's maximum possible Euclidean and Manhattan distances between two training examples? Explain.
+
+\item
+  Why we do {\bf not} want to binarize the two numerical fields, {\it age} and {\it hours}?
+  What if we did?
+  How should we define the distances on these two dimensions so that
+  each field has equal weight? (In other words, the distance induced by
+  each field should be bounded by \update{2} (N.B.: not 1! why?)).
+  
+  \update{Hint: first, observe that the max distance between two people on a categorial field is 2. If we simply ``normalize'' a numerical field by, say, age / 100, it might look OK but now what's the max distance between two people on age? Are you treating all fields equally?}
+  
+ % \update{Hint: numerical fields / 50, e.g., ``age" / 50 so that the max distance
+ % on ``age'' is also 2.}
+  
+
+%\item 
+%Q: Based on your common sense intuition, what's the most indicative positive feature? Hint: \verb|education=...| 
+
+
+\item 
+  Q: How many features do you have in total (i.e., the dimensionality)?
+  %Do not forget the bias dimension.
+  Hint: should be around \update{90}.
+  How many features do you allocate for 
+  each of the 9 fields?
+\update{  Hint:   }
+ \color{black}
+\begin{verbatim}
+$ for i in `seq 1 9`; do cat income.train.txt.5k | cut -f $i -d ',' | sort | uniq | wc -l; done
+\end{verbatim}
+\color{black}
+
+Here \verb|`seq 1 9`| returns the sequence \verb|1 2 ... 9|, \verb|cut| is a command to extract specific columns of each line (e.g., \verb|cut -f 2| extracts the second column), and \verb|-d ','| means using comma as the column separator. 
+\verb|uniq| filters out duplicate consecutive rows, and \verb|wc -l| counts the number of lines. So \verb$sort | uniq | wc -l$ returns the number of unique rows.
+
+\noindent{\bf Hint:} No need to start from scratch, as I've supplied \verb|binarize_example.py| which is basically a standalone version of the ``binarize from scratch'' portion
+of the jupyter notebook I showed in the binarization video. You can run it in a directory that contains \verb|toy.txt| (just \verb|python3 binarize_example.py|) and expand this code to do binarization for all fields.
+
+\item
+  Q: How many features would you have in total if you binarize all fields?
+
+  %% save for perceptron
+%% \item
+%% Q: Do we need to consider features that do not appear in the training set? E.g., \verb|age=1| does not appear because this is the ``adult-income" data set. What if a feature appears on test but not on training data? 
+\end{enumerate}
+
+
+
+
+\section{Calculating Manhattan and Euclidean Distances}
+
+Hint: you can use the Matlab style ``broadcasting'' notations in numpy (such as matrix - vector) 
+to calculate many distances in one shot.  
+For example, if \verb|A| is an $n \times m$ matrix ($n$ rows, $m$ columns, where $n$ is the number of people and $m$ is the number of features), and \verb|p| is an $m$-dimensional vector (1 row, $m$ columns) representing the query person, then \verb|A - p| returns the difference vectors from each person in \verb|A| to the query person \verb|p|, from which you can compute the distances:
+
+\begin{verbatim}
+>>> A = np.array([[1,2], [2,3], [4,5]])
+>>> p = np.array([3,2])
+>>> A - p
+array([[-2,  0],
+       [-1,  1],
+       [ 1,  3]])
+>>> np.linalg.norm(A-p, axis=1)
+array([2.        , 1.41421356, 3.16227766])
+\end{verbatim}
+
+This is Euclidean distance (what does \verb|axis=1| mean?). You need to figure out Manhattan distance yourself.
+
+To make sure your distance calculations are correct, we provide the following example calculations using the first person in the dev set:
+
+\begin{verbatim}
+$ head -1 income.dev.txt
+45, Federal-gov, Bachelors, Married-civ-spouse, Adm-clerical, White, Male, 45, United-States, <=50K
+\end{verbatim}
+
+The top-3  examples in the training set that are closest to the above person, according to the Manhattan distance, should be the following rows
+(note that the command \verb|sed -n XXp| prints the XX$^{th}$ line of a file):
+
+\begin{verbatim}
+$ sed -n 4873p income.train.txt.5k
+33, Federal-gov, Bachelors, Married-civ-spouse, Adm-clerical, White, Male, 42, United-States, >50K
+$ sed -n 4788p income.train.txt.5k
+47, Federal-gov, Bachelors, Married-civ-spouse, Adm-clerical, White, Male, 45, Germany, >50K
+$ sed -n 2592p income.train.txt.5k
+48, Federal-gov, Bachelors, Married-civ-spouse, Prof-specialty, White, Male, 44, United-States, >50K
+\end{verbatim}
+
+Notice that the first of these three persons matches all categorical fields with the dev person, only differing slightly in the two numerical fields, 
+and the second and third persons match all but one categorical fields.
+The Manhattan distances of these three people to the dev person are:
+
+\begin{verbatim}
+(45-33) / 50. + (45-42) / 50. = 0.3
+(47-45) / 50. + (45-45) / 50. + 1 + 1 = 2.04
+(48-45) / 50. + (45-44) / 50. + 1 + 1 = 2.08
+\end{verbatim}
+
+Coincidentally, these three people are also the top-3 closest according to the Euclidean distances, with the distances being
+
+\begin{verbatim}
+sqrt( ((45-33) / 50.) ** 2 + ((45-42) / 50.) ** 2 ) = 0.24738633753705963
+sqrt( ((47-45) / 50.) ** 2 + ((45-45) / 50.) ** 2  + 1 ** 2 + 1 ** 2 ) = 1.4147791347061915
+sqrt( ((48-45) / 50.) ** 2 + ((45-44) / 50.) ** 2  + 1 ** 2 + 1 ** 2 ) = 1.4156270695349111
+\end{verbatim}
+
+Also notice that in both cases, the 3-NN predictions are wrong,
+as the top-3 closest examples are all \verb|>50K|.
+
+Finally, remember that you don't really need to sort the distances 
+in order to get the top-$k$ closest examples.
+
+\bigskip
+
+Questions: 
+
+\begin{enumerate}
+
+\item 
+Find the five (5) people closest to the last person (in Euclidean distance) in dev, and report their  distances:
+
+\begin{verbatim}
+$ tail -1 income.dev.txt
+58, Private, HS-grad, Widowed, Adm-clerical, White, Female, 40, United-States, <=50K
+\end{verbatim}
+
+\item Redo the above using Manhattan distance.
+
+\item What are the 5-NN predictions for this person (Euclidean and Manhattan)? Are these predictions correct?
+
+%\item Redo all the above using 9-NN (i.e., find top-9 people closest to this person first).
+\end{enumerate}
+
+\bigskip
+{\color{black}\bf YOU SHOULD FINISH EVERYTHING UP TO HERE BY THE END OF WEEK 2.}
+
+\section{$k$-Nearest Neighbor Classification}
+
+\begin{enumerate}
+
+\item Implement the basic $k$-NN classifier (with the default Euclidean distance).
+
+ %Q: What's the time complexity of $k$-NN to train all data? (Wait, is there any real work in training? but do you need to load the data?)
+ 
+ Q: Is there any work in training {\em after} finishing the feature map?
+
+  Q: What's the time complexity of $k$-NN to test one example (dimensionality $d$, size of training set $|D|$)?
+  
+  Q:  Do you really need to {\em sort} the distances  first and then choose the top $k$? Hint: there is a faster way to choose top $k$ {\em without} sorting.
+
+\item
+  Q: Why the $k$ in $k$-NN has to be an odd number?
+  
+\item
+Evaluate $k$-NN on the dev set and report the error rate and predicted positive rate for $k=1,3,5,7,9,99,999,9999$, e.g., something like:
+
+\begin{verbatim}
+k=1    dev_err xx.x% (+:xx.x%) 
+k=3    ...
+...
+k=9999 ...
+\end{verbatim}
+
+Q: what's your best error rate on dev, and where did you get it? 
+(Hint: 1-NN dev error should be $\sim$23\% and its positive \% should be $\sim$27\%).
+
+\item
+  Now report both training and \sout{testing} \update{dev} errors (your code needs to run a lot faster!
+  See Question~\sout{4.3} \update{\ref{sec:obs}.\ref{list:numpy}} for hints. See also week 2 videos for numpy and linear algebra tutorials, in case you're not familiar with the ``Matlab''-style of thinking which is inherited by numpy):
+  
+\begin{verbatim}
+k=1    train_err xx.x% (+:xx.x%)  dev_err xx.x% (+:xx.x%) 
+k=3    ...
+...
+k=9999 ...
+\end{verbatim}
+
+Q: When $k=1$, is training error 0\%? Why or why not? Look at the training data to confirm your answer.
+
+%Q: Which model do you want to deploy, the one that achieves the best train or dev error rate? Why?
+
+\item
+  Q: What trends (train and dev error rates and positive ratios,
+  and running speed) do you observe with increasing $k$? 
+  Do they relate to underfitting and overfitting?
+
+  Q: What does $k=\infty$ actually do? Is it extreme overfitting or underfitting?
+  What about $k=1$?
+
+\item Redo the evaluation using Manhattan distance. Better or worse? Any advantage of Manhattan distance?
+
+\item Redo the evaluation using all-binarized features (with Euclidean). Better or worse? Does it make sense?
+
+%\item Plot the dev error rates for both vanilla and averaged perceptrons for the first epoch. x-axis: epoch ([0:1]), y-axis: dev error rate. Plotting frequency: every \underline{200} training examples.
+%
+%Q: what do you observe from this plot?
+%
+%Note: you can use {\tt gnuplot} or {\tt matplotlib.pyplot} to make this plot, but \underline{not} Excel or Matlab.
+
+\end{enumerate}
+
+\section{Deployment}
+
+Now try more $k$'s and take your best model
+and run it on the semi-blind test data, and produce \verb|income.test.predicted|,
+which has the same format as the training and dev files.
+ 
+Q: At which $k$ and with which distance did you achieve the best dev results?
+
+Q: What's your best dev error rates and the corresponding positive ratios? 
+
+Q: What's the positive ratio on test?
+
+Part of your grade will depend on the accuracy of \verb|income.test.predicted|.
+
+\bigskip
+
+{\bf IMPORTANT}: You should use our \verb|validate.py| to verify your \verb|income.test.predicted|;
+it will catch many common problems such as formatting issues and overly positive or overly negative results:
+
+\verb#cat income.test.predicted | python3 validate.py#
+
+We also provided a \verb|random_output.py| which generates random predictions ($\sim$50\% positive) and it will pass the formatting check, but fail on the positive ratio:
+
+\verb#$ cat income.test.blind | python3 random_output.py | python3 validate.py#
+
+which might output:
+\begin{verbatim}
+Your file passed the formatting test! :)
+Your positive rate is 49.6%.
+ERROR: Your positive rate seems too high (should be similar to train and dev).
+PLEASE DOUBLE CHECK YOUR BINARIZATION AND K-MEANS CODE.
+\end{verbatim}
+
+If you test the dev set, it will certainly pass this test (try \verb#cat income.dev.txt | python3 validate.py#).
+
+Our automatic grading system will \underline{assume} your \verb|incoming.test.predicted| passes this test; if it doesn't, you will receive 0 points for the blind test part.
+
+\section{Observations}
+\label{sec:obs}
+\begin{enumerate}
+\item
+Q: Summarize the major drawbacks of $k$-NN that you observed by doing this HW. There are a lot!
+
+\item
+Q: Do you observe in this HW that best-performing models tend to exaggerate the existing bias in the training data? Is it due to overfitting or underfitting? Is this a potentially social issue?
+
+\item \label{list:numpy}
+Q: What numpy tricks did you use to speed up your program so that it can be fast enough to print the training error?  Hint: (a) broadcasting (such as matrix - vector);
+%r vector - scalar); 
+(b) \verb|np.linalg.norm(..., axis=1)|;
+ (c) \verb|np.argsort()| or \verb|np.argpartition()|; (d) slicing.
+ The main idea is to do as much computation in the vector-matrix format as possible 
+ (i.e., the Matlab philosophy),
+ and as little in Python as possible.
+ 
+ \item
+ 
+ How many seconds does it take to print the training and dev errors for $k=99$ on ENGR servers?
+ Hint: use \verb|time python ... | and report the {\em user time} instead of the real time. (Mine was about 14 seconds).
+
+\item
+
+What is a Voronoi diagram (shown in $k$-NN slides)? How does it relate to $k$-NN?
+
+\end{enumerate}
+%List at least two such exaggerations (one is obvious) in this HW.
+
+%Q: What's the high-level intuition why such exaggeration almost 
+%Q: Why is such an exaggeration potentially causing a moral issue?
+
+
+%
+%\section{MIRA and Aggressive MIRA}
+%
+%\begin{enumerate}
+%\item Implement the default (non-aggressive) MIRA, and its averaged version. Run them for 5 epochs on the training data, still with an evaluation frequency of 1,000 training examples.
+%
+%Q: what are the best error rates on dev (for MIRA and avg.~MIRA, res.), and where do you get them?
+%
+%\item Implement the aggressive version of MIRA, and test the following $p$ (aggressivity threshold): 0.1, 0.5, 0.9.
+%
+%Q: what are the best error rates on dev (for  \{unavg, avg\} $\times$ \{0.1, 0.5, 0.9\}), and where do you get them?
+%
+%\item
+% Q: what do you observe from these experiments? Also compare them with the perceptron ones.
+%
+%\end{enumerate}
+
+%\end{enumerate}
+
+%\color{red}
+
+
+%\color{black}
+
+{%\small
+\section*{Debriefing (required in your report)}
+\begin{enumerate}
+\item Approximately how many hours did you spend on this assignment?
+\item Would you rate it as easy, moderate, or difficult?
+\item Did you work on it mostly alone, or mostly with other people?
+\item How deeply do you feel you understand the material it covers (0\%--100\%)?
+\item Any other comments?
+\end{enumerate}
+}
+\end{document}
+
+\end{document}
