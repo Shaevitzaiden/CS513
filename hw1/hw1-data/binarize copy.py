@@ -19,47 +19,69 @@ def make_binary_mapping(data, numerical_features=[0,7]):
     # create binarization mapping where "new_data" is lists of integers corresponding to hot indices in the binarized matrix
     mapping = {}
     new_data = []
-    for row in data[:-1]:
+    for row in data:
         new_row = []
         for j, x in enumerate(row):
             if j in numerical_features:
-                feature = (j, "numerical") # Create placeholder for numerical  values in mapping
+                continue
+            elif j == 9:
+                continue
             else:
                 feature = (j, x) # j is the column index and x is the value
-            if feature not in mapping: # new feature
-                mapping[feature] = len(mapping) # insert a new feature into the index
-            new_row.append(mapping[feature])
+                if feature not in mapping: # new feature
+                    mapping[feature] = len(mapping) # insert a new feature into the index
+                new_row.append(mapping[feature])
     return mapping
 
-def binarize(data, mapping, numerical_features=[0,7]):
-    num_features = len(mapping) + len(numerical_features)
-    binarized_features = np.zeros([len(data), num_features])
-    outcomes = []
+def binarize(data, mapping):
+    new_data = []
+    new_age_hours = []
     for i, row in enumerate(data):
+        new_row = []
+        new_age_hour_row = []
         for j, x in enumerate(row):
             if j == 0: # Skip the age, hours worked, and maybe the pos/neg outcome
-                binarized_features[i, j] = scale_age(float(x))
+                new_age_hour_row.append(scale_age(int(x)))
+                continue
             elif j == 7:
-                binarized_features[i, j] = scale_hours(float(x))
+                new_age_hour_row.append(scale_hours(int(x)))
+                continue
             elif j == 9:
-                outcomes.append(1 if x==">50K" else 0)
+                continue
             else:
+                feature = (j, x) # j is the column index and x is the value
                 try:
-                    binarized_features[i][mapping[j, x]] = 1
+                    new_row.append(mapping[feature])
                 except KeyError:
                     pass
-    return binarized_features, outcomes
+        new_data.append(new_row)
+        new_age_hours.append(new_age_hour_row)
+    new_age_hours = np.array(new_age_hours)
+        
 
-def knn(example_features, train_features, train_output, k=3, o=0):
+    # # the number of unique binary features
+    num_features = len(mapping)
+    # print(num_features)
+
+    # # binarize data
+    bindata = np.zeros((len(data), num_features)) # initialize a 2D table
+    # print(bindata)
+    for i, row in enumerate(new_data): # fill in the table
+        # print(i, row)
+        for x in row: # for each column
+            bindata[i][x] = 1
+    
+    bindata = np.hstack((bindata, new_age_hours))
+    return bindata
+
+def knn(example_features, train_features, train_output, k=3):
     """ k-nearest-neighbor classifier
     :params ndarray example_features: binarized array of features to be classified
     :params ndarray train_features: binarized array of features to be compared against
     :params ndarray train_output: binarized array to find classification of example
     """
     
-    neighbors = np.argpartition(np.linalg.norm(example_features - train_features, axis=1, ord=o), k)[:k]
-
-
+    neighbors = np.argpartition(np.linalg.norm(example_features - train_features, axis=1, ord=ord), k)[:k]
 
 if __name__ == "__main__":
         # Open text file    
@@ -71,8 +93,8 @@ if __name__ == "__main__":
     
     
     bin_map = make_binary_mapping(data_train)
-    bindata_dev, outcomes_dev = binarize(data_dev, bin_map)
-    bindata_train, outcomes_train = binarize(data_train, bin_map)
+    bindata_dev = binarize(data_dev, bin_map)
+    bindata_train = binarize(data_train, bin_map)
 
 
     # Get closed people by euclidean and manhattan distance
