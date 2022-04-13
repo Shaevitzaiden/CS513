@@ -64,7 +64,7 @@ def eval(k, testX, testY, train):
 if __name__ == "__main__":
     field_value_freqs = defaultdict(lambda : defaultdict(int)) # field_id -> value -> freq
     numerical_fields = [] # [] for binarizing all the fields
-    for line in open("hw1-data/income.train.txt.5k"):
+    for line in open("income.train.txt.5k"):
         line = line.strip()
         features = line.split(", ")[:-1] # exclude target label
         for i, fv in enumerate(features):
@@ -81,8 +81,8 @@ if __name__ == "__main__":
     dimension = len(feature_map) # bias
     print("dimensionality: %d" % dimension) #, feature_map
 
-    train_data = process_data("hw1-data/income.train.txt.5k")
-    dev_data = process_data("hw1-data/income.dev.txt")
+    train_data = process_data("income.train.txt.5k")
+    dev_data = process_data("income.dev.txt")
 
     ord = int(sys.argv[1]) # order: 1 (Manhattan) or 2 (Euclidean) or any p
     for k in map(int, sys.argv[2:]):
