@@ -25,13 +25,11 @@ def make_binary_mapping(data, numerical_features=[0,7]):
     for row in data[:-1]:
         new_row = []
         for j, x in enumerate(row):
-            if j in numerical_features:
-                feature = (j, "numerical") # Create placeholder for numerical  values in mapping
-            else:
-                feature = (j, x) # j is the column index and x is the value
+            feature = (j, x) # j is the column index and x is the value
             if feature not in mapping: # new feature
                 mapping[feature] = len(mapping) # insert a new feature into the index
             new_row.append(mapping[feature])
+    print(len(mapping))
     return mapping
 
 def binarize(data, mapping, numerical_features=[0,7]):
@@ -40,11 +38,7 @@ def binarize(data, mapping, numerical_features=[0,7]):
     outputs = []
     for i, row in enumerate(data):
         for j, x in enumerate(row):
-            if j == 0: # Skip the age, hours worked, and maybe the pos/neg outcome
-                binarized_features[i, j] = scale_age(float(x))
-            elif j == 7:
-                binarized_features[i, j] = scale_hours(float(x))
-            elif j == 9:
+            if j == 9:
                 outputs.append(1 if x==">50K" else -1)
             else:
                 try:
@@ -89,71 +83,66 @@ def knn_eval(example_features, example_output, train_features, train_output, k=3
     
 
 if __name__ == "__main__":
-    test_data = []
-    for line in sys.stdin:
-        test_data.append(line.strip().split(", ")) # extract the 9 input fields; call strip() to remove the final "\n"
-    print(test_data)
-     
-    # # Open text file    
-    # lines_train = open('income.train.txt.5k').readlines()
-    # data_train = [line.strip().split(", ") for line in lines_train]
+    # Open text file    
+    lines_train = open('income.train.txt.5k').readlines()
+    data_train = [line.strip().split(", ") for line in lines_train]
 
-    # lines_dev = open('income.dev.txt').readlines()
-    # data_dev = [line.strip().split(", ") for line in lines_dev]
+    lines_dev = open('income.dev.txt').readlines()
+    data_dev = [line.strip().split(", ") for line in lines_dev]
 
-    # lines_test = open('income.test.blind').readlines()
-    # data_test = [line.strip().split(", ") for line in lines_test]
-
-    # # Create binary mapping from training data
-    # bin_map = make_binary_mapping(data_train)
+    lines_test = open('income.test.blind').readlines()
+    data_test = [line.strip().split(", ") for line in lines_test]
+    print(data_train)
+    # Create binary mapping from training data
+    bin_map = make_binary_mapping(data_train)
     
-    # # Gets binary features from datasets
-    # bindata_dev, outputs_dev = binarize(data_dev, bin_map)
-    # bindata_train, outputs_train = binarize(data_train, bin_map)
-    # bindata_test, outputs_test = binarize(data_test, bin_map) # outputs empty list for test set
-    # outputs_test = [i for i in range(bindata_test.shape[0])] # Just to get code to run (vals don't matter, only length)
+    # Gets binary features from datasets
+    bindata_dev, outputs_dev = binarize(data_dev, bin_map)
+    bindata_train, outputs_train = binarize(data_train, bin_map)
+    bindata_test, outputs_test = binarize(data_test, bin_map) # outputs empty list for test set
+    outputs_test = [i for i in range(bindata_test.shape[0])] # Just to get code to run (vals don't matter, only length)
     
-    # # # Run knn to classify all blind test samples
-    # # _,_, predictions = knn_eval(bindata_test, outputs_test, bindata_train, outputs_train, k=41, o=1)
+    # # Run knn to classify all blind test samples
+    # _,_, predictions = knn_eval(bindata_test, outputs_test, bindata_train, outputs_train, k=41, o=1)
 
-    # # for i, p in enumerate(predictions):
-    # #     label = ">50K" if p==1 else "<=50K" #
-    # #     print(", ".join(data_test[i] + [label])) # output 10 fields, separated by ", "
+    # for i, p in enumerate(predictions):
+    #     label = ">50K" if p==1 else "<=50K" #
+    #     print(", ".join(data_test[i] + [label])) # output 10 fields, separated by ", "
     
 
-    # # # err, _, predictions = knn_eval(bindata_train, outputs_train, bindata_train, outputs_train, k=1, o=1)
-    # # # print(err)
-    # # best_k = 41 #14.4% euclidean 14.2% Manhattan
-    # ks = list(range(1,200,4))
-    # ks = ks + [499, 1499, 2499, 4999] 
-    # times = []
-    # errs = []
-    # poss = []
-    # for k in ks:
-    #     t1 = time.time()
-    #     error, pos, predictions = knn_eval(bindata_dev, outputs_dev, bindata_train, outputs_train, k=k, o=2)
-    #     errs.append(error)
-    #     poss.append(pos)
+    # # err, _, predictions = knn_eval(bindata_train, outputs_train, bindata_train, outputs_train, k=1, o=1)
+    # # print(err)
+    # best_k = 41 #14.4% euclidean 14.2% Manhattan
+    ks = list(range(1,199,2))
+    ks = ks + [499, 1499, 2499, 4999] 
+    times = []
+    errs = []
+    poss = []
+    for k in ks:
+        t1 = time.time()
+        error, pos, predictions = knn_eval(bindata_dev, outputs_dev, bindata_train, outputs_train, k=k, o=2)
+        errs.append(error)
+        poss.append(pos)
 
-    #     dt = time.time() - t1
-    #     times.append(dt)
-    #     print("k={0}    dev_error {1}% (+:{2}% )    time={3}".format(k, round(error,1),round(pos,1), round(dt,3)))
-    #     # error_t, pos_t, predictions = knn_eval(bindata_train, outputs_train, bindata_train, outputs_train, k=k, o=2)
-    #     # print("k={0}    train_error {1}% (+:{2}% )    dev_error {3}% (+:{4}% )".format(k, round(error_t,1), round(pos_t,1), round(error,1),round(pos,1)))
+        dt = time.time() - t1
+        times.append(dt)
+        print("k={0}    dev_error {1}% (+:{2}% )    time={3}".format(k, round(error,1),round(pos,1), round(dt,3)))
+        # error_t, pos_t, predictions = knn_eval(bindata_train, outputs_train, bindata_train, outputs_train, k=k, o=2)
+        # print("k={0}    train_error {1}% (+:{2}% )    dev_error {3}% (+:{4}% )".format(k, round(error_t,1), round(pos_t,1), round(error,1),round(pos,1)))
     
-    # f, ax = plt.subplots(1,2)
-    # ax[0].plot(ks,errs)
-    # ax[0].plot(ks,poss)
-    # ax[0].set_title('Errors and Positives')
-    # ax[0].legend(('Error','Positives'), loc="best")
-    # ax[0].set_xlabel('k values')
-    # ax[0].set_ylabel('Percentage')
+    f, ax = plt.subplots(1,2)
+    ax[0].plot(ks,errs)
+    ax[0].plot(ks,poss)
+    ax[0].set_title('Errors and Positives')
+    ax[0].legend(('Error','Positives'), loc="best")
+    ax[0].set_xlabel('k values')
+    ax[0].set_ylabel('Percentage')
 
-    # ax[1].plot(ks,times)
-    # ax[1].set_title('Runtimes')
-    # ax[1].set_xlabel('k values')
-    # ax[1].set_ylabel('Runtime (s)')
-    # plt.show()
+    ax[1].plot(ks,times)
+    ax[1].set_title('Runtimes')
+    ax[1].set_xlabel('k values')
+    ax[1].set_ylabel('Runtime (s)')
+    plt.show()
 
 
 
