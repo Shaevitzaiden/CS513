@@ -80,39 +80,8 @@ def knn_eval(example_features, example_output, train_features, train_output, k=3
     percent_error = error / len(example_output) * 100
     percent_positive = positive / len(example_output) * 100
     return percent_error, percent_positive, predictions
-    
 
-if __name__ == "__main__":
-    # Open text file    
-    lines_train = open('income.train.txt.5k').readlines()
-    data_train = [line.strip().split(", ") for line in lines_train]
-
-    lines_dev = open('income.dev.txt').readlines()
-    data_dev = [line.strip().split(", ") for line in lines_dev]
-
-    lines_test = open('income.test.blind').readlines()
-    data_test = [line.strip().split(", ") for line in lines_test]
-    print(data_train)
-    # Create binary mapping from training data
-    bin_map = make_binary_mapping(data_train)
-    
-    # Gets binary features from datasets
-    bindata_dev, outputs_dev = binarize(data_dev, bin_map)
-    bindata_train, outputs_train = binarize(data_train, bin_map)
-    bindata_test, outputs_test = binarize(data_test, bin_map) # outputs empty list for test set
-    outputs_test = [i for i in range(bindata_test.shape[0])] # Just to get code to run (vals don't matter, only length)
-    
-    # # Run knn to classify all blind test samples
-    # _,_, predictions = knn_eval(bindata_test, outputs_test, bindata_train, outputs_train, k=41, o=1)
-
-    # for i, p in enumerate(predictions):
-    #     label = ">50K" if p==1 else "<=50K" #
-    #     print(", ".join(data_test[i] + [label])) # output 10 fields, separated by ", "
-    
-
-    # # err, _, predictions = knn_eval(bindata_train, outputs_train, bindata_train, outputs_train, k=1, o=1)
-    # # print(err)
-    # best_k = 41 #14.4% euclidean 14.2% Manhattan
+def plot_stuff():
     ks = list(range(1,199,2))
     ks = ks + [499, 1499, 2499, 4999] 
     times = []
@@ -143,6 +112,41 @@ if __name__ == "__main__":
     ax[1].set_xlabel('k values')
     ax[1].set_ylabel('Runtime (s)')
     plt.show()
+
+
+if __name__ == "__main__":
+    # Open text file    
+    lines_train = open('income.train.txt.5k').readlines()
+    data_train = [line.strip().split(", ") for line in lines_train]
+
+    lines_dev = open('income.dev.txt').readlines()
+    data_dev = [line.strip().split(", ") for line in lines_dev]
+
+    lines_test = open('income.test.blind').readlines()
+    data_test = [line.strip().split(", ") for line in lines_test]
+    print(data_train)
+    # Create binary mapping from training data
+    bin_map = make_binary_mapping(data_train)
+    
+    # Gets binary features from datasets
+    bindata_dev, outputs_dev = binarize(data_dev, bin_map)
+    bindata_train, outputs_train = binarize(data_train, bin_map)
+    bindata_test, outputs_test = binarize(data_test, bin_map) # outputs empty list for test set
+    outputs_test = [i for i in range(bindata_test.shape[0])] # Just to get code to run (vals don't matter, only length)
+    
+    # Run knn to classify all blind test samples
+    err, pos, predictions = knn_eval(bindata_test, outputs_test, bindata_train, outputs_train, k=41, o=1)
+    print(err)
+    print(pos)
+    # for i, p in enumerate(predictions):
+    #     label = ">50K" if p==1 else "<=50K" #
+    #     print(", ".join(data_test[i] + [label])) # output 10 fields, separated by ", "
+    
+
+    # # err, _, predictions = knn_eval(bindata_train, outputs_train, bindata_train, outputs_train, k=1, o=1)
+    # # print(err)
+    # best_k = 41 #14.4% euclidean 14.2% Manhattan
+    
 
 
 

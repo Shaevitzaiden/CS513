@@ -89,84 +89,28 @@ def knn_eval(example_features, example_output, train_features, train_output, k=3
     
 
 if __name__ == "__main__":
-    test_data = []
+    data_test = []
     for line in sys.stdin:
-        test_data.append(line.strip().split(", ")) # extract the 9 input fields; call strip() to remove the final "\n"
-    print(test_data)
+        data_test.append(line.strip().split(", ")) # extract the 9 input fields; call strip() to remove the final "\n"
+    
      
-    # # Open text file    
-    # lines_train = open('income.train.txt.5k').readlines()
-    # data_train = [line.strip().split(", ") for line in lines_train]
-
-    # lines_dev = open('income.dev.txt').readlines()
-    # data_dev = [line.strip().split(", ") for line in lines_dev]
-
-    # lines_test = open('income.test.blind').readlines()
-    # data_test = [line.strip().split(", ") for line in lines_test]
-
-    # # Create binary mapping from training data
-    # bin_map = make_binary_mapping(data_train)
+    # Open text file    
+    lines_train = open('income.train.txt.5k').readlines()
+    data_train = [line.strip().split(", ") for line in lines_train]
     
-    # # Gets binary features from datasets
-    # bindata_dev, outputs_dev = binarize(data_dev, bin_map)
-    # bindata_train, outputs_train = binarize(data_train, bin_map)
-    # bindata_test, outputs_test = binarize(data_test, bin_map) # outputs empty list for test set
-    # outputs_test = [i for i in range(bindata_test.shape[0])] # Just to get code to run (vals don't matter, only length)
     
-    # # # Run knn to classify all blind test samples
-    # # _,_, predictions = knn_eval(bindata_test, outputs_test, bindata_train, outputs_train, k=41, o=1)
-
-    # # for i, p in enumerate(predictions):
-    # #     label = ">50K" if p==1 else "<=50K" #
-    # #     print(", ".join(data_test[i] + [label])) # output 10 fields, separated by ", "
+    # Create binary mapping from training data
+    bin_map = make_binary_mapping(data_train)
     
-
-    # # # err, _, predictions = knn_eval(bindata_train, outputs_train, bindata_train, outputs_train, k=1, o=1)
-    # # # print(err)
-    # # best_k = 41 #14.4% euclidean 14.2% Manhattan
-    # ks = list(range(1,200,4))
-    # ks = ks + [499, 1499, 2499, 4999] 
-    # times = []
-    # errs = []
-    # poss = []
-    # for k in ks:
-    #     t1 = time.time()
-    #     error, pos, predictions = knn_eval(bindata_dev, outputs_dev, bindata_train, outputs_train, k=k, o=2)
-    #     errs.append(error)
-    #     poss.append(pos)
-
-    #     dt = time.time() - t1
-    #     times.append(dt)
-    #     print("k={0}    dev_error {1}% (+:{2}% )    time={3}".format(k, round(error,1),round(pos,1), round(dt,3)))
-    #     # error_t, pos_t, predictions = knn_eval(bindata_train, outputs_train, bindata_train, outputs_train, k=k, o=2)
-    #     # print("k={0}    train_error {1}% (+:{2}% )    dev_error {3}% (+:{4}% )".format(k, round(error_t,1), round(pos_t,1), round(error,1),round(pos,1)))
+    # Gets binary features from datasets
+    bindata_train, outputs_train = binarize(data_train, bin_map)
+    bindata_test, outputs_test = binarize(data_test, bin_map) # outputs empty list for test set
+    outputs_test = [i for i in range(bindata_test.shape[0])] # Just to get code to run (vals don't matter, only length)
     
-    # f, ax = plt.subplots(1,2)
-    # ax[0].plot(ks,errs)
-    # ax[0].plot(ks,poss)
-    # ax[0].set_title('Errors and Positives')
-    # ax[0].legend(('Error','Positives'), loc="best")
-    # ax[0].set_xlabel('k values')
-    # ax[0].set_ylabel('Percentage')
+    # Run knn to classify all blind test samples
+    _,_, predictions = knn_eval(bindata_test, outputs_test, bindata_train, outputs_train, k=41, o=1)
 
-    # ax[1].plot(ks,times)
-    # ax[1].set_title('Runtimes')
-    # ax[1].set_xlabel('k values')
-    # ax[1].set_ylabel('Runtime (s)')
-    # plt.show()
-
-
-
-
-    # # Get closed people by euclidean and manhattan distance
-    # last_person_dev = bindata_dev[-1,:]
-    # print(data_dev[-1])
-
-    # euclid_distances = np.linalg.norm(bindata_train-last_person_dev, axis=1)
-    # manhattan_distances = np.linalg.norm(bindata_train-last_person_dev, axis=1, ord=1)
-
-    # idx = np.argpartition(manhattan_distances,5)[:5]
-    # print(idx[0:5])
-    # for i in idx[0:5]:
-    #     print(euclid_distances[i])
-    #     print(data_train[i])
+    for i, p in enumerate(predictions):
+        label = ">50K" if p==1 else "<=50K" #
+        print(", ".join(data_test[i] + [label])) # output 10 fields, separated by ", "
+    
