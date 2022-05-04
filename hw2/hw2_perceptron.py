@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-from tkinter import Y
-from xml.sax.handler import feature_external_ges
 import numpy as np
 import matplotlib.pyplot as plt
 import sys

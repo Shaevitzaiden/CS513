@@ -98,7 +98,6 @@ if __name__ == "__main__":
     lines_train = open('income.train.txt.5k').readlines()
     data_train = [line.strip().split(", ") for line in lines_train]
     
-    
     # Create binary mapping from training data
     bin_map = make_binary_mapping(data_train)
     

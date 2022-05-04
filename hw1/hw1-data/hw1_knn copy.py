@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
     lines_test = open('income.test.blind').readlines()
     data_test = [line.strip().split(", ") for line in lines_test]
-    print(data_train)
+    # print(data_train)
     # Create binary mapping from training data
     bin_map = make_binary_mapping(data_train)
     
@@ -134,10 +134,10 @@ if __name__ == "__main__":
     bindata_test, outputs_test = binarize(data_test, bin_map) # outputs empty list for test set
     outputs_test = [i for i in range(bindata_test.shape[0])] # Just to get code to run (vals don't matter, only length)
     
-    # Run knn to classify all blind test samples
-    err, pos, predictions = knn_eval(bindata_test, outputs_test, bindata_train, outputs_train, k=41, o=1)
-    print(err)
-    print(pos)
+    # # Run knn to classify all blind test samples
+    # err, pos, predictions = knn_eval(bindata_test, outputs_test, bindata_train, outputs_train, k=41, o=1)
+    # print(err)
+    # print(pos)
     # for i, p in enumerate(predictions):
     #     label = ">50K" if p==1 else "<=50K" #
     #     print(", ".join(data_test[i] + [label])) # output 10 fields, separated by ", "
@@ -151,15 +151,15 @@ if __name__ == "__main__":
 
 
 
-    # # Get closed people by euclidean and manhattan distance
-    # last_person_dev = bindata_dev[-1,:]
-    # print(data_dev[-1])
+    # Get closed people by euclidean and manhattan distance
+    last_person_dev = bindata_dev[-1,:]
+    print(data_dev[-1])
 
-    # euclid_distances = np.linalg.norm(bindata_train-last_person_dev, axis=1)
-    # manhattan_distances = np.linalg.norm(bindata_train-last_person_dev, axis=1, ord=1)
+    euclid_distances = np.linalg.norm(bindata_train-last_person_dev, axis=1, ord=2)
+    manhattan_distances = np.linalg.norm(bindata_train-last_person_dev, axis=1, ord=1)
 
-    # idx = np.argpartition(manhattan_distances,5)[:5]
-    # print(idx[0:5])
-    # for i in idx[0:5]:
-    #     print(euclid_distances[i])
-    #     print(data_train[i])
+    idx = np.argpartition(manhattan_distances,5)[:5]
+    print(idx[0:5])
+    for i in idx[0:5]:
+        print(manhattan_distances[i])
+        print(data_train[i])
