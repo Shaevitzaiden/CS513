@@ -78,12 +78,9 @@ def binarize(data, mapping, numeric=[], nonnlinear=[], combos=[], test=False):
 
     return feature_map, outputs
 
-def sort_features(weights, binary_mapping, field_names, num_features=10, first='neg'):
+def sort_features(weights, binary_mapping, field_names, num_features=10, first='pos'):
     weights_idx = np.argsort(weights)
-    if first == "neg":
-        pass
-    elif first == "pos":
-        weights_idx = np.flip(weights_idx)
+    # weights_idx = np.flip(weights_idx)
     
     key_features = []
     for i in range(num_features):
@@ -127,12 +124,15 @@ if __name__ == "__main__":
     numeric_fields = [2, 3, 16, 17, 18, 19, 25, 33, 35, 36, 37, 42, 43, 44, 45, 46, 47, 48, 49, 50, 
                     51, 53, 55, 58, 60, 61, 65, 66, 67, 68, 69, 70, 74, 75, 76]
     mixed_fields =[2, 58, 33, 35, 36, 37, 61, 25, 46, 47, 60]
-    
+    numeric_fields = []
+    mixed_fields = []
+
+
     quad = lambda x: x**2
     nlog = lambda x: np.log(x)
-    nonlin = [(3, nlog)]
+    nonlin = [] #[(3, nlog)]
     # yearbuilt-yearsold,  overalqual*overallcond
-    combos = [(18, 76, "s"), (16, 17, "m")] #, (12, 13, 'm')]
+    combos = [] #[(18, 76, "s"), (16, 17, "m")] #, (12, 13, 'm')]
 
     # for i in range(len(field_names)):
     #     print("{0}, {1}".format(i, field_names[i]))
@@ -148,23 +148,23 @@ if __name__ == "__main__":
     reshaped_test_output = outputs_train.reshape((bindata_train.shape[0],1))
     
     # Create and fit model
-    # model = linear_model.LinearRegression()
-    model = linear_model.Ridge(alpha=20)
+    model = linear_model.LinearRegression()
+    # model = linear_model.Ridge(alpha=20)
 
     model.fit(bindata_train, np.log(reshaped_test_output))
     
     # -------------- Dev set --------------
-    # price_predict = model.predict(bindata_dev)
-    # print(np.sqrt(mean_squared_log_error(outputs_dev, np.exp(price_predict))))
-    # bias = model.intercept_
-    # coeffs = model.coef_
-    # coeffs_idx = np.argsort(coeffs)
+    price_predict = model.predict(bindata_dev)
+    print(np.sqrt(mean_squared_log_error(outputs_dev, np.exp(price_predict))))
+    bias = model.intercept_
+    coeffs = model.coef_
+    coeffs_idx = np.argsort(coeffs)
     
     # ------------- Find top and bottom 10 ----------
-    # sorted_features = sort_features(coeffs[0,:], bin_map, field_names, first="pos")
-    # print("Col, Field,  Weight")
-    # for feature in sorted_features:
-    #     print(feature)
+    sorted_features = sort_features(coeffs[0,:], bin_map, field_names)
+    print("Col, Field,  Weight")
+    for feature in sorted_features:
+        print(feature)
     
 
     # -------------- Test set -------------
@@ -172,6 +172,6 @@ if __name__ == "__main__":
 
     price_predict = model.predict(bindata_test)
     
-    print("Id,SalePrice")
-    for i in range(price_predict.shape[0]):
-        print(",".join([submission_ids[i]] + [str(np.exp(price_predict[i,0]))])) 
+    # print("Id,SalePrice")
+    # for i in range(price_predict.shape[0]):
+    #     print(",".join([submission_ids[i]] + [str(np.exp(price_predict[i,0]))])) 

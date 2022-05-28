@@ -1,6 +1,3 @@
-epoch 1 updates 1257 (25.14% ) dev_error 15.0% (+:18.6% )
-epoch 2 updates 1221 (24.42% ) dev_error 15.1% (+:19.3% )
-epoch 3 updates 1177 (23.54% ) dev_error 14.8% (+:20.0% )
 40, Private, Doctorate, Married-civ-spouse, Prof-specialty, White, Male, 60, United-States, >50K
 24, Private, Bachelors, Married-civ-spouse, Tech-support, White, Male, 50, United-States, <=50K
 29, Private, Some-college, Divorced, Tech-support, White, Male, 58, United-States, <=50K
